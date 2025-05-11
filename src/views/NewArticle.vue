@@ -47,7 +47,7 @@ watch(body, val => validateField('body', val))
 onMounted(async () => {
   try {
     const response = await axios.get('/tags')
-    availableTags.value = response.data.tags
+    availableTags.value = response.data.tags.sort((a, b) => a.localeCompare(b))
   } catch (error) {
     console.error('Error fetching tags:', error)
   }

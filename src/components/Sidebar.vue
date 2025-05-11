@@ -42,13 +42,31 @@
             @click.native="$emit('menu-click')"
           >New Article</router-link>
         </li>
+        <li v-if="sidebarOpen" class="mt-4 lg:hidden">
+          <button
+            @click="handleLogout"
+            class="w-full text-left py-2 px-4 rounded-md font-semibold text-red-600 hover:bg-red-50 transition"
+          >
+            Logout
+          </button>
+        </li>
       </ul>
     </nav>
   </aside>
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+import BaseButton from './BaseButton.vue'
+
+const router = useRouter()
+
 defineProps({
   sidebarOpen: Boolean
 })
+
+function handleLogout() {
+  localStorage.removeItem('token')
+  router.push('/login')
+}
 </script> 

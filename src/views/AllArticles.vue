@@ -123,11 +123,11 @@ watch(page, fetchArticles);
                 {{ (page - 1) * pageSize + i + 1 }}
               </div>
             </td>
-            <td class="py-2 px-3 font-semibold">{{ article.title }}</td>
+            <td class="py-2 px-3 font-semibold" style="max-width: 260px">{{ article.title }}</td>
             <td class="py-2 px-3 text-neutral-800">
               {{ article.author.username }}
             </td>
-            <td class="py-2 px-3 text-neutral-800">
+            <td class="py-2 px-3 text-neutral-800" style="max-width: 260px">
               {{ article.tagList.join(" , ") }}
             </td>
             <td

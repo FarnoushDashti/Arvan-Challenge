@@ -61,7 +61,9 @@ onMounted(async () => {
   }
   try {
     const response = await axios.get('/tags')
-    availableTags.value = response.data.tags
+    const articleTags = selectedTags.value || []
+    const serverTags = response.data.tags || []
+    availableTags.value = [...new Set([...articleTags, ...serverTags])].sort((a, b) => a.localeCompare(b))
   } catch (error) {
     // silent fail
   }

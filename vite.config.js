@@ -9,7 +9,7 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': {
-        target: 'https://api.realworld.io',
+        target: 'https://api-3281216083-arvancloud-challenge.apps.ir-central1.arvancaas.ir',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api/, '/api'),
       },
