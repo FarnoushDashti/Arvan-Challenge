@@ -71,7 +71,7 @@ async function confirmDelete() {
   if (!articleToDelete.value) return;
   await axios.delete(`/articles/${articleToDelete.value}`);
   if (window.toastRef && typeof window.toastRef.showToast === 'function') {
-    window.toastRef.showToast('Article deleted successfuly', 'success')
+    window.toastRef.showToast('','Article deleted successfuly')
   }
   closeDeleteModal();
   fetchArticles();
@@ -123,16 +123,16 @@ watch(page, fetchArticles);
                 {{ (page - 1) * pageSize + i + 1 }}
               </div>
             </td>
-            <td class="py-2 px-3 font-semibold" style="max-width: 260px">{{ article.title }}</td>
-            <td class="py-2 px-3 text-neutral-800">
+            <td class="py-2 px-3 font-semibold" style="max-width: 200px">{{ article.title }}</td>
+            <td class="py-2 px-3 text-neutral-800" style="max-width: 100px">
               {{ article.author.username }}
             </td>
-            <td class="py-2 px-3 text-neutral-800" style="max-width: 260px">
+            <td class="py-2 px-3 text-neutral-800" style="max-width: 200px">
               {{ article.tagList.join(" , ") }}
             </td>
             <td
               class="py-2 px-3 text-neutral-800 max-w-xs break-words align-top"
-              style="max-width: 260px"
+              style="max-width: 300px"
             >
               {{
                 article.body
