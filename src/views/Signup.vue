@@ -1,38 +1,47 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../axios'
+import BaseButton from '../components/BaseButton.vue'
+import BaseInput from '../components/BaseInput.vue'
+import * as yup from 'yup'
 
 const router = useRouter()
 const username = ref('')
 const email = ref('')
 const password = ref('')
-const error = ref('')
-const usernameError = ref(false)
-const emailError = ref(false)
-const emailErrorMsg = ref('')
-const passwordError = ref(false)
 const loading = ref(false)
 
-async function handleSignup() {
-  usernameError.value = !username.value.trim()
-  passwordError.value = !password.value.trim()
-  
-  if (!email.value.trim()) {
-    emailError.value = true
-    emailErrorMsg.value = 'Required field'
-  } else if (!/^\S+@\S+\.\S+$/.test(email.value)) {
-    emailError.value = true
-    emailErrorMsg.value = 'Invalid email format'
-  } else {
-    emailError.value = false
-    emailErrorMsg.value = ''
+const errors = ref({
+  username: '',
+  email: '',
+  password: ''
+})
+
+const schema = yup.object({
+  username: yup.string().required('Required field'),
+  email: yup.string().email('Invalid email format').required('Required field'),
+  password: yup.string().required('Required field'),
+})
+
+async function validateField(field, value) {
+  try {
+    await schema.validateAt(field, { [field]: value })
+    errors.value[field] = ''
+  } catch (err) {
+    errors.value[field] = err.message
   }
+}
 
-  if (usernameError.value || passwordError.value || emailError.value) return
+watch(username, val => validateField('username', val))
+watch(email, val => validateField('email', val))
+watch(password, val => validateField('password', val))
 
+async function handleSignup() {
   loading.value = true
   try {
+    await schema.validate({ username: username.value, email: email.value, password: password.value }, { abortEarly: false })
+    errors.value = { username: '', email: '', password: '' }
     const response = await axios.post('/users', {
       user: {
         username: username.value,
@@ -44,14 +53,17 @@ async function handleSignup() {
     localStorage.setItem('token', token)
     router.push('/login')
   } catch (err) {
-    let msg = 'Registration failed'
-    if (err.response?.data?.errors?.body?.length) {
-      msg = err.response.data.errors.body.join('، ')
-    }
-    if (window.toastRef && typeof window.toastRef.showToast === 'function') {
-      window.toastRef.showToast(msg, 'error')
-    } else {
-      error.value = msg
+    if (err.name === 'ValidationError' && err.inner) {
+      errors.value = { username: '', email: '', password: '' }
+      err.inner.forEach(e => {
+        errors.value[e.path] = e.message
+      })
+    } else if (window.toastRef && typeof window.toastRef.showToast === 'function') {
+      let msg = 'Registration failed'
+      if (err.response?.data?.errors?.body?.length) {
+        msg = err.response.data.errors.body.join('، ')
+      }
+      window.toastRef.showToast('Sign-up Failed!', msg, 'error')
     }
   } finally {
     loading.value = false
@@ -66,46 +78,40 @@ async function handleSignup() {
       <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign up</h2>
       <form @submit.prevent="handleSignup">
         <div class="mb-4">
-          <label class="block text-gray-600 mb-1">Username</label>
-          <input
+          <BaseInput
             v-model="username"
-            type="text"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
-            :class="{'border-red-400': usernameError}"
+            label="Username"
             placeholder="Enter your username"
+            :error="errors.username"
           />
-          <p v-if="usernameError" class="text-red-500 text-xs mt-1">Required field</p>
         </div>
         <div class="mb-4">
-          <label class="block text-gray-600 mb-1">Email</label>
-          <input
+          <BaseInput
             v-model="email"
             type="email"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
-            :class="{'border-red-400': emailError}"
+            label="Email"
             placeholder="Enter your email"
+            :error="errors.email"
           />
-          <p v-if="emailError" class="text-red-500 text-xs mt-1">{{ emailErrorMsg }}</p>
         </div>
         <div class="mb-6">
-          <label class="block text-gray-600 mb-1">Password</label>
-          <input
+          <BaseInput
             v-model="password"
             type="password"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
-            :class="{'border-red-400': passwordError}"
+            label="Password"
             placeholder="Enter your password"
+            :error="errors.password"
           />
-          <p v-if="passwordError" class="text-red-500 text-xs mt-1">Required field</p>
         </div>
-        <button
-          class="w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-600 transition flex items-center justify-center gap-2"
+        <BaseButton
+          class="w-full"
+          :loading="loading"
           :disabled="loading"
+          variant="primary"
+          type="submit"
         >
-          <span v-if="loading" class="loader border-2 border-white border-t-transparent rounded-full w-5 h-5 animate-spin"></span>
-          <span v-else>Sign up</span>
-          <span v-if="loading">Signing up...</span>
-        </button>
+          Sign up
+        </BaseButton>
       </form>
 
       <div class="mt-4 text-center text-gray-500 text-sm">

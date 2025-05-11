@@ -1,35 +1,43 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../axios'
+import BaseButton from '../components/BaseButton.vue'
+import BaseInput from '../components/BaseInput.vue'
+import * as yup from 'yup'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
-const error = ref('')
-const emailError = ref(false)
-const emailErrorMsg = ref('')
-const passwordError = ref(false)
 const loading = ref(false)
 
-async function handleLogin() {
-  passwordError.value = !password.value.trim()
-  
-  if (!email.value.trim()) {
-    emailError.value = true
-    emailErrorMsg.value = 'Required field'
-  } else if (!/^\S+@\S+\.\S+$/.test(email.value)) {
-    emailError.value = true
-    emailErrorMsg.value = 'Invalid email format'
-  } else {
-    emailError.value = false
-    emailErrorMsg.value = ''
+const errors = ref({
+  email: '',
+  password: ''
+})
+
+const schema = yup.object({
+  email: yup.string().email('Invalid email format').required('Required field'),
+  password: yup.string().required('Required field'),
+})
+
+async function validateField(field, value) {
+  try {
+    await schema.validateAt(field, { [field]: value })
+    errors.value[field] = ''
+  } catch (err) {
+    errors.value[field] = err.message
   }
+}
 
-  if (passwordError.value || emailError.value) return
+watch(email, val => validateField('email', val))
+watch(password, val => validateField('password', val))
 
+async function handleLogin() {
   loading.value = true
   try {
+    await schema.validate({ email: email.value, password: password.value }, { abortEarly: false })
+    errors.value = { email: '', password: '' }
     const response = await axios.post('/users/login', {
       user: {
         email: email.value,
@@ -40,7 +48,18 @@ async function handleLogin() {
     localStorage.setItem('token', token)
     router.push('/')
   } catch (err) {
-    error.value = 'Invalid email or password'
+    if (err.name === 'ValidationError' && err.inner) {
+      errors.value = { email: '', password: '' }
+      err.inner.forEach(e => {
+        errors.value[e.path] = e.message
+      })
+    } else if (window.toastRef && typeof window.toastRef.showToast === 'function') {
+      let msg = 'Login failed'
+      if (err.response?.data?.errors?.body?.length) {
+        msg = err.response.data.errors.body.join('، ')
+      }
+      window.toastRef.showToast('Login Failed!', msg, 'error')
+    }
   } finally {
     loading.value = false
   }
@@ -54,35 +73,32 @@ async function handleLogin() {
       <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign in</h2>
       <form @submit.prevent="handleLogin">
         <div class="mb-4">
-          <label class="block text-gray-600 mb-1">Email</label>
-          <input
+          <BaseInput
             v-model="email"
             type="email"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
-            :class="{'border-red-400': emailError}"
+            label="Email"
             placeholder="Enter your email"
+            :error="errors.email"
           />
-          <p v-if="emailError" class="text-red-500 text-xs mt-1">{{ emailErrorMsg }}</p>
         </div>
         <div class="mb-6">
-          <label class="block text-gray-600 mb-1">Password</label>
-          <input
+          <BaseInput
             v-model="password"
             type="password"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
-            :class="{'border-red-400': passwordError}"
+            label="Password"
             placeholder="Enter your password"
+            :error="errors.password"
           />
-          <p v-if="passwordError" class="text-red-500 text-xs mt-1">Required field</p>
         </div>
-        <button
-          class="w-full bg-teal-600 text-white py-2 rounded-lg font-semibold hover:bg-teal-600 transition flex items-center justify-center gap-2"
+        <BaseButton
+          class="w-full"
+          :loading="loading"
           :disabled="loading"
+          variant="primary"
+          type="submit"
         >
-          <span v-if="loading" class="loader border-2 border-white border-t-transparent rounded-full w-5 h-5 animate-spin"></span>
-          <span v-else>Sign in</span>
-          <span v-if="loading">Signing in...</span>
-        </button>
+          Sign in
+        </BaseButton>
       </form>
 
       <div class="mt-4 text-center text-gray-500 text-sm">
@@ -94,8 +110,6 @@ async function handleLogin() {
     </div>
   </div>
 </template>
-
-
 
 <style scoped>
 .loader {

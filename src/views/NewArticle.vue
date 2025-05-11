@@ -1,49 +1,90 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from '../axios'
+import BaseButton from '../components/BaseButton.vue'
+import BaseInput from '../components/BaseInput.vue'
+import BaseCheckbox from '../components/BaseCheckbox.vue'
+import { useRouter } from 'vue-router'
+import * as yup from 'yup'
 
+const router = useRouter()
 const title = ref('')
 const description = ref('')
 const body = ref('')
 const selectedTags = ref([])
-const tags = ref([])
-const titleError = ref(false)
+const availableTags = ref([])
 const loading = ref(false)
-const errorMsg = ref('')
 const newTag = ref('')
 const tagLoading = ref(false)
 const tagError = ref('')
 const disabledTags = ref([])
 
+const errors = ref({
+  title: '',
+  description: '',
+  body: ''
+})
+
+const schema = yup.object({
+  title: yup.string().required('Required field'),
+  description: yup.string().required('Required field'),
+  body: yup.string().required('Required field'),
+})
+
+async function validateField(field, value) {
+  try {
+    await schema.validateAt(field, { [field]: value })
+    errors.value[field] = ''
+  } catch (err) {
+    errors.value[field] = err.message
+  }
+}
+
+watch(title, val => validateField('title', val))
+watch(description, val => validateField('description', val))
+watch(body, val => validateField('body', val))
+
 onMounted(async () => {
   try {
-    const { data } = await axios.get('/tags')
-    tags.value = (data.tags || []).sort((a, b) => a.localeCompare(b))
-  } catch (err) {
-    console.error('Error fetching tags:', err)
+    const response = await axios.get('/tags')
+    availableTags.value = response.data.tags
+  } catch (error) {
+    console.error('Error fetching tags:', error)
   }
 })
 
 async function handleSubmit() {
-  titleError.value = !title.value.trim()
-  if (titleError.value) return
   loading.value = true
-  errorMsg.value = ''
   try {
+    await schema.validate({ title: title.value, description: description.value, body: body.value }, { abortEarly: false })
+    errors.value = { title: '', description: '', body: '' }
     await axios.post('/articles', {
       article: {
         title: title.value,
         description: description.value,
         body: body.value,
-        tagList: selectedTags.value
-      }
+        tagList: selectedTags.value,
+      },
     })
     if (window.toastRef && typeof window.toastRef.showToast === 'function') {
-      window.toastRef.showToast('Article created successfuly', 'success')
+      window.toastRef.showToast('ٌWell done !', 'Article created successfully', 'success')
     }
-    window.location.href = '/'
+    setTimeout(() => {
+      router.push('/')
+    }, 700)
   } catch (err) {
-    errorMsg.value = err.response?.data?.errors?.body?.[0] || 'Error creating article.'
+    if (err.name === 'ValidationError' && err.inner) {
+      errors.value = { title: '', description: '', body: '' }
+      err.inner.forEach(e => {
+        errors.value[e.path] = e.message
+      })
+    } else if (window.toastRef && typeof window.toastRef.showToast === 'function') {
+      let msg = 'Failed to create article'
+      if (err.response?.data?.errors?.body?.length) {
+        msg = err.response.data.errors.body.join('، ')
+      }
+      window.toastRef.showToast('', msg, 'error')
+    }
   } finally {
     loading.value = false
   }
@@ -62,9 +103,9 @@ async function handleAddTag(e) {
   selectedTags.value.push(tag)
   disabledTags.value.push(tag)
   
-  if (!tags.value.includes(tag)) {
-    tags.value.push(tag)
-    tags.value.sort((a, b) => a.localeCompare(b))
+  if (!availableTags.value.includes(tag)) {
+    availableTags.value.push(tag)
+    availableTags.value.sort((a, b) => a.localeCompare(b))
   }
   
   newTag.value = ''
@@ -78,23 +119,35 @@ async function handleAddTag(e) {
       <div class="border-b border-b-zinc-200"></div>
       <form @submit.prevent="handleSubmit" class="space-y-5 p-8 ">
         <div>
-          <label class="block mb-1 font-medium">Title</label>
-          <input v-model="title" class="w-full border border-zinc-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600" :class="{'border-red-400': titleError}" placeholder="Title" />
-          <p v-if="titleError" class="text-red-500 text-xs mt-1">Required field</p>
+          <BaseInput
+            v-model="title"
+            label="Title"
+            placeholder="Article title"
+            :error="errors.title"
+          />
         </div>
         <div>
-          <label class="block mb-1 font-medium">Description</label>
-          <input v-model="description" class="w-full border border-zinc-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600" placeholder="Description" />
+          <BaseInput
+            v-model="description"
+            label="Description"
+            placeholder="What's this article about?"
+            :error="errors.description"
+          />
         </div>
         <div>
           <label class="block mb-1 font-medium">Body</label>
           <textarea v-model="body" class="w-full border border-zinc-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600" rows="5" placeholder="Body"></textarea>
+          <p v-if="errors.body" class="text-red-500 text-xs mt-1">{{ errors.body }}</p>
         </div>
-        <button class="bg-teal-600 text-white px-6 py-2 rounded-xl font-semibold hover:bg-teal-600 transition flex items-center justify-center gap-2" type="submit" :disabled="loading">
-          <span v-if="loading" class="loader border-2 border-white border-t-transparent rounded-full w-5 h-5 animate-spin"></span>
-          <span v-else>Submit</span>
-          <span v-if="loading">Submitting...</span>
-        </button>
+        <BaseButton
+          class="w-1/7"
+          :loading="loading"
+          :disabled="loading"
+          variant="primary"
+          type="submit"
+        >
+          Submit
+        </BaseButton>
       </form>
     </div>
     <div class="flex flex-col gap-4 w-full md:w-2/5">
@@ -105,9 +158,17 @@ async function handleAddTag(e) {
         <p v-if="tagError" class="text-red-500 text-xs mt-1">{{ tagError }}</p>
         <p v-if="tagLoading" class="text-teal-600 text-xs mt-1">Adding...</p>
         <div class="bg-white border border-zinc-300 rounded-2xl p-2 px-5 pt-5 overflow-y-auto mb-10">
-          <div v-for="tag in tags" :key="tag" class="flex items-center mb-2">
-            <input type="checkbox" :id="tag" :value="tag" v-model="selectedTags" class="mr-2 custom-checkbox" :disabled="disabledTags.includes(tag)" />
-            <label :for="tag">{{ tag }}</label>
+          <div v-for="tag in availableTags" :key="tag" class="flex items-center mb-2">
+            <BaseCheckbox
+              v-model="selectedTags"
+              :value="tag"
+              :id="'tag-' + tag"
+              :disabled="disabledTags.includes(tag)"
+              color="primary"
+              size="sm"
+              class="mr-2"
+            />
+            <label :for="'tag-' + tag">{{ tag }}</label>
           </div>
         </div>
       </div>

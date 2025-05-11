@@ -6,6 +6,13 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
-    cors: true
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'https://api.realworld.io',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api/, '/api'),
+      },
+    }
   }
 })

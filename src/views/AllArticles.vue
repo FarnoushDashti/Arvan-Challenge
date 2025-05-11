@@ -3,7 +3,8 @@ import { ref, onMounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "../axios";
 import moment from "moment";
-import DeleteArticleModal from "../components/DeleteArticleModal.vue";
+import MassageModal from "../components/MassageModal.vue";
+import Pagination from '../components/Pagination.vue'
 
 const articles = ref([]);
 const articlesCount = ref(0);
@@ -197,58 +198,19 @@ watch(page, fetchArticles);
       </table>
       <!-- Pagination -->
       <div v-if="pagination.length>0" class="flex justify-end mt-6">
-        <nav
-          class="flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 bg-white"
-        >
-          <button
-            class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 pb-1"
-            :class="
-              page === 1
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'hover:bg-gray-100'
-            "
-            :disabled="page === 1"
-            @click="page--"
-          >
-            &lt;
-          </button>
-          <template v-for="p in pagination" :key="p">
-            <span
-              v-if="p === '...'"
-              class="w-8 h-8 flex items-center justify-center text-gray-400 select-none"
-              >...</span
-            >
-            <button
-              v-else
-              class="w-8 h-8 flex items-center justify-center rounded-lg"
-              :class="
-                page === p
-                  ? 'bg-teal-600 text-white font-bold'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              "
-              @click="page = p"
-            >
-              {{ p }}
-            </button>
-          </template>
-          <button
-            class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 pb-1"
-            :class="
-              page === totalPages
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'hover:bg-gray-100'
-            "
-            :disabled="page === totalPages"
-            @click="page++"
-          >
-            &gt;
-          </button>
-        </nav>
+        <Pagination :page="page" :totalPages="totalPages" @update:page="val => page = val" />
       </div>
     </div>
 
-    <DeleteArticleModal
+    <MassageModal
       :show="showDeleteModal"
+      type="error"
+      title="Delete Article"
+      message="Are you sure you want to delete this article?"
+      :buttons="[
+        { label: 'Delete', action: 'confirm', type: 'danger' },
+        { label: 'Cancle', action: 'cancel', type: 'default' }
+      ]"
       @confirm="confirmDelete"
       @cancel="closeDeleteModal"
     />
