@@ -19,28 +19,22 @@ const disabledTags = ref([])
 
 onMounted(async () => {
   try {
-    // Fetch both tags and article data
     const [{ data: tagData }, { data: articleData }] = await Promise.all([
       axios.get('/tags'),
       axios.get(`/articles/${route.params.slug}`)
     ])
     
-    // Set all available tags from server
     const serverTags = (tagData.tags || []).sort((a, b) => a.localeCompare(b))
     
-    // Set article data
     title.value = articleData.article.title
     description.value = articleData.article.description
     body.value = articleData.article.body
     
-    // Find tags that are only in the article (user-added tags)
     const articleOnlyTags = articleData.article.tagList.filter(tag => !serverTags.includes(tag))
     
-    // Set selected tags and disabled tags
     selectedTags.value = [...articleData.article.tagList]
     disabledTags.value = [...articleOnlyTags]
     
-    // Combine server tags and article-only tags for display
     tags.value = [...serverTags, ...articleOnlyTags].sort((a, b) => a.localeCompare(b))
   } catch (err) {
     errorMsg.value = 'Error loading article data'
@@ -88,11 +82,9 @@ function handleAddTag(e) {
     return
   }
   
-  // Add tag to selected tags and disabled tags
   selectedTags.value.push(tag)
   disabledTags.value.push(tag)
   
-  // Add tag to the display list (but not to the server tags)
   if (!tags.value.includes(tag)) {
     tags.value.push(tag)
     tags.value.sort((a, b) => a.localeCompare(b))

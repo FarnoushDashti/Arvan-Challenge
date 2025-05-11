@@ -59,11 +59,9 @@ async function handleAddTag(e) {
     return
   }
   
-  // Add tag to selected tags and disabled tags
   selectedTags.value.push(tag)
   disabledTags.value.push(tag)
   
-  // Add tag to the display list (but not to the server tags)
   if (!tags.value.includes(tag)) {
     tags.value.push(tag)
     tags.value.sort((a, b) => a.localeCompare(b))
