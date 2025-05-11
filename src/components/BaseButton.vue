@@ -11,19 +11,21 @@
     :disabled="disabled || loading"
     @click="$emit('click', $event)"
   >
-    <span v-if="loading" class="loader mr-2"></span>
-    <span v-else-if="icon && iconPosition === 'left'" class="mr-2">
-      <slot name="icon">
-        <svg v-if="icon === 'check'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="none"/><path d="M5 9.5l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg v-else-if="icon === 'circle'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/></svg>
-      </slot>
-    </span>
-    <span><slot /></span>
-    <span v-if="!loading && icon && iconPosition === 'right'" class="ml-2">
-      <slot name="icon">
-        <svg v-if="icon === 'check'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="none"/><path d="M5 9.5l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg v-else-if="icon === 'circle'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/></svg>
-      </slot>
+    <span v-if="loading" class="loader"></span>
+    <span v-else>
+      <span v-if="icon && iconPosition === 'left'" class="mr-2">
+        <slot name="icon">
+          <svg v-if="icon === 'check'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="none"/><path d="M5 9.5l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else-if="icon === 'circle'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/></svg>
+        </slot>
+      </span>
+      <slot />
+      <span v-if="icon && iconPosition === 'right'" class="ml-2">
+        <slot name="icon">
+          <svg v-if="icon === 'check'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="none"/><path d="M5 9.5l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else-if="icon === 'circle'" width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/></svg>
+        </slot>
+      </span>
     </span>
   </button>
 </template>
@@ -68,11 +70,11 @@ const outlineClass = computed(() => {
 
 <style scoped>
 .loader {
-  border: 2.5px solid #fff;
-  border-top: 2.5px solid #08979c;
+  border: 2px solid #fff;
+  border-top: 2px solid #08979c;
   border-radius: 50%;
-  width: 1.5em;
-  height: 1.5em;
+  width: 1.2em;
+  height: 1.2em;
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
